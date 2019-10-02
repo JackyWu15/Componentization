@@ -5,11 +5,18 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -73,10 +80,12 @@ public class ExceptionCrashManager implements Thread.UncaughtExceptionHandler {
      * 缓存日志文件
      */
     private void cacheCrashFile(String crashFileName) {
-        SharedPreferences sp = mContext.getSharedPreferences("crash", Context.MODE_PRIVATE );
-        SharedPreferences.Editor edit = sp.edit();
-        edit.putString("CRASH_FILE_NAME", crashFileName);
-        edit.commit();
+        SharedPreferences sharedPreferences = mContext.getSharedPreferences("crash", Context.MODE_PRIVATE );
+        if(sharedPreferences!=null) {
+            SharedPreferences.Editor edit = sharedPreferences.edit();
+            edit.putString( "CRASH_FILE_NAME", crashFileName );
+            edit.commit();
+        }
     }
 
     /**
@@ -85,8 +94,11 @@ public class ExceptionCrashManager implements Thread.UncaughtExceptionHandler {
      */
     public File getCrashFile() {
         SharedPreferences sharedPreferences = mContext.getSharedPreferences("crash", Context.MODE_PRIVATE);
-        String crashFileName = sharedPreferences.getString("CRASH_FILE_NAME", "");
-        return new File( crashFileName );
+        if(sharedPreferences!=null) {
+            String crashFileName = sharedPreferences.getString( "CRASH_FILE_NAME", "" );
+            return new File( crashFileName );
+        }
+        return null;
     }
 
     /**
@@ -231,4 +243,30 @@ public class ExceptionCrashManager implements Thread.UncaughtExceptionHandler {
         //目录此时为空可以删除
         return true;
     }
+
+
+
+    //上次闪退bug
+    public void commitCrashLog(){
+        File crashFile = getCrashFile();
+        if (crashFile.exists()) {
+            BufferedReader bufferedReader = null;
+            try {
+                bufferedReader = new BufferedReader( new InputStreamReader( new FileInputStream( crashFile ), "UTF-8" ) );
+                String crashLog = "";
+                while ((crashLog = bufferedReader.readLine()) != null) {
+                    Log.i( TAG, "initData:>>>" + crashLog );
+                }
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
 }

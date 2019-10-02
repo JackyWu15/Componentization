@@ -3,35 +3,51 @@ package com.hechuangwu.baselibrary.base;
 import android.app.Application;
 
 import com.alibaba.android.arouter.launcher.ARouter;
-import com.hechuangwu.baselibrary.helper.manager.ExceptionCrashManager;
 import com.hechuangwu.baselibrary.helper.manager.ActivitiesManager;
+import com.hechuangwu.baselibrary.helper.manager.ExceptionCrashManager;
+import com.hechuangwu.baselibrary.helper.manager.andfix.AndFixPatchManager;
 
 
 /**
  * 作者：Created by Ding on 2019/5/25
  * 文件描述：
  */
-public class BaseApplication extends Application {
+public class BaseApplicationManager {
     //是否开启调试
     private  boolean isDebug =true;
     //全局唯一的context
-    private static BaseApplication application;
+    private static BaseApplicationManager baseApplicationManager;
+    //全局application
+    private static Application mApplication;
     //Activity管理器
     private ActivitiesManager mActivitiesManager;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
+    private BaseApplicationManager(Application application){
+        mApplication = application;
+    }
+    public static BaseApplicationManager getInstance(Application application){
+        if(baseApplicationManager ==null){
+            synchronized (BaseApplicationManager.class){
+                if(baseApplicationManager ==null){
+                    baseApplicationManager = new BaseApplicationManager(application);
+                }
+            }
+        }
+        return baseApplicationManager;
+    }
+    public  void onCreate() {
+        baseApplicationManager = this;
         create();
         initRouter();
     }
 
     private void create(){
-        application = this;
         //activity管理
         mActivitiesManager = new ActivitiesManager();
         //闪退日志
-        ExceptionCrashManager.getInstance().init( this );
+        ExceptionCrashManager.getInstance().init( mApplication );
+
+        //AndFix
+        AndFixPatchManager.getInstance().initPatch( mApplication );
     }
 
     /**
@@ -46,15 +62,7 @@ public class BaseApplication extends Application {
             ARouter.openDebug();
         }
         //ARouter的实例化
-        ARouter.init(this);
-    }
-    /**
-     * 程序终止的时候执行
-     */
-    @Override
-    public void onTerminate() {
-        super.onTerminate();
-        exitApp();
+        ARouter.init(mApplication);
     }
 
     /**
@@ -71,10 +79,10 @@ public class BaseApplication extends Application {
     /**
      * 获取全局唯一上下文
      *
-     * @return BaseApplication
+     * @return BaseApplicationManager
      */
-    public static BaseApplication getApplication() {
-        return application;
+    public static Application getApplication() {
+        return mApplication;
     }
 
 

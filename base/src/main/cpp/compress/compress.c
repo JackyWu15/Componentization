@@ -107,11 +107,12 @@ int generateJPEG(BYTE *data, int width, int height, int quality, const char *nam
 /**
  *  压缩入口
  */
+
 JNIEXPORT jint JNICALL
-Java_com_hechuangwu_baselibrary_jpeg_ImageCompress_nativeCompressBitmap(JNIEnv *env, jclass jclz,
-                                                                       jobject bitmap, jint quality,
-                                                                       jstring dstFile_,
-                                                                       jboolean optimize) {
+Java_com_hechuangwu_baselibrary_helper_jpeg_ImageCompress_nativeCompressBitmap(JNIEnv *env, jclass jclz,
+                                                                               jobject bitmap, jint quality,
+                                                                               jstring dstFile_,
+                                                                               jboolean optimize) {
 
     int ret;
     AndroidBitmapInfo androidBitmapInfo;
@@ -147,7 +148,7 @@ Java_com_hechuangwu_baselibrary_jpeg_ImageCompress_nativeCompressBitmap(JNIEnv *
     //bitmap转rgb
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            if(format = ANDROID_BITMAP_FORMAT_RGBA_8888){
+            if(format == ANDROID_BITMAP_FORMAT_RGBA_8888){
                 //像素数据
                 color = *((int*)(pixelsColor));
                 //取出rgb数据，原数据排列顺序是A B G R
@@ -182,6 +183,3 @@ Java_com_hechuangwu_baselibrary_jpeg_ImageCompress_nativeCompressBitmap(JNIEnv *
     free((void *)tempData);
     return ret;
 }
-
-
-

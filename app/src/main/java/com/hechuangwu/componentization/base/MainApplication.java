@@ -1,12 +1,12 @@
 package com.hechuangwu.componentization.base;
 
-import com.hechuangwu.baselibrary.base.BaseApplication;
+import android.app.Application;
 
 /**
  * Created by cwh on 2019/9/23 0023.
  * 功能:
  */
-public class MainApplication extends BaseApplication {
+public class MainApplication extends Application {
 
     @Override
     public void onCreate() {

@@ -1,14 +1,24 @@
 apply plugin: 'com.android.application'
 
+
+def javaVersion = JavaVersion.VERSION_1_7
 android {
     compileSdkVersion rootProject.ext.globalCompileSdkVersion
     buildToolsVersion rootProject.ext.globalBuildToolVersion
+    compileOptions {
+        sourceCompatibility javaVersion
+        targetCompatibility javaVersion
+    }
+    dexOptions {
+        jumboMode = true
+    }
+
     defaultConfig {
-        applicationId "com.hechuangwu.easyjoke"
         minSdkVersion rootProject.ext.globalMinSdkVersion
         targetSdkVersion rootProject.ext.globalCompileSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {
@@ -16,17 +26,54 @@ android {
                 includeCompileClasspath = true
             }
         }
+
         resourcePrefix "app_"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = [AROUTER_MODULE_NAME: project.getName()]
             }
         }
+
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+        flavorDimensions "default"  //多渠道打包时，保证所有的flavor都属于同一个维度
+    }
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    //自动签名支持
+    signingConfigs {
+        release {
+            keyAlias 'hechuangwu'
+            keyPassword 'hcw123456'
+            storeFile file('componentization.jks')
+            storePassword 'hcw123456'
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    //多渠道脚本支持
+    productFlavors {
+        yyb {
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "yyb"]
+        }
+
+        baidu {
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "baidu"]
+        }
+        productFlavors.all {
+            flavor -> flavor.manifestPlaceholders = [UMENG_CHANNEL_VALUE: name]
         }
     }
 }
@@ -38,3 +85,176 @@ dependencies {
     }
 
 }
+
+
+//根据bakPath路径下的oldApk信息，生成差分包patch.apk文件
+def bakPath = file("${buildDir}/bakApk/")
+def apkDir = "app-1002-19-34-32"
+ext {
+    tinkerId = "1.0"
+    tinkerEnabled = true
+    tinkerOldApkPath = "${bakPath}/${apkDir}"
+    tinkerApplyMappingPath = "${bakPath}/${apkDir}"
+    tinkerApplyResourcePath = "${bakPath}/${apkDir}"
+    tinkerBuildFlavorDirectory = "${bakPath}/${apkDir}"
+}
+
+def buildWithTinker() {
+    return ext.tinkerEnabled
+}
+def getOldApkPath() {
+    return ext.tinkerOldApkPath
+}
+def getApplyMappingPath() {
+    return ext.tinkerApplyMappingPath
+}
+def getApplyResourcePath() {
+    return ext.tinkerApplyResourcePath
+}
+def getTinkerIdValue() {
+    return ext.tinkerId
+}
+
+def getTinkerBuildFlavorDirectory(){
+    return ext.tinkerBuildFlavorDirectory
+}
+
+
+//启用tinker编译插件
+if(buildWithTinker()){
+    apply plugin: 'com.tencent.tinker.patch'
+    //config相关参数配置
+    tinkerPatch{
+        oldApk = getOldApkPath() //
+        ignoreWarning = false //不忽略警告，有警告则中断生成patch文件
+        useSign = true//强制启用签名的patch
+        tinkerEnable = buildWithTinker()//是否开启tinker编译器
+        buildConfig {
+            applyMapping = getApplyMappingPath()//指定 oldApk打包时所要使用的混淆文件
+            applyResourceMapping = getApplyResourcePath()//指定 oldApk打包时所要使用的资源文件
+            tinkerId = getTinkerIdValue()//指定TinkerId，这个id必须都保持一致，才能把patch文件打入oldApk中
+            keepDexApply = false//根据分包来编译patch，通常为false
+            isProtectedApp = false
+            supportHotplugComponent = false
+        }
+        //对dex文件的修改
+        dex {
+            dexMode = "jar"//raw是dex格式，jar是将所有的dex打包成jar，一般使用jar
+            pattern = ["classes*.dex","assets/secondary-dex-?.jar"]//指定dex文件目录
+            loader = ["com.hechuangwu.baselibrary.base.BaseApplicationManager"]//加载patch时用到的类
+        }
+        //对lib的修改
+        lib {
+            pattern = ["lib/*/*.so"]//指定so路径
+        }
+        //对资源文件的修改
+        res {
+            pattern = ["res/*", "assets/*", "resources.arsc", "AndroidManifest.xml"]//资源文件
+            ignoreChange = ["assets/sample_meta.txt"]//指定修改的文件忽略差异
+            largeModSize = 100//资源改动大小，超过这个值，将使用bsdiff算法
+        }
+
+        //对patch文件修复的额外说明
+        packageConfig {
+            configField("patchMessage", "fix the 2.0 version  bugs")//修复日志
+            configField("patchVersion", "1.0")//patch版本
+            configField("platform", "all")//使用平台
+        }
+
+    }
+
+    //将apk和配置文件拷贝到bakApk
+    List<String> flavors = new ArrayList<>()
+    project.android.productFlavors.each { flavor ->
+        flavors.add(flavor.name)
+    }
+    boolean hasFlavors = flavors.size() > 0
+    def date = new Date().format("MMdd-HH-mm-ss")
+    android.applicationVariants.all { variant ->
+        def taskName = variant.name
+        tasks.all {
+            if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
+                it.doLast {
+                    copy {
+                        def fileNamePrefix = "${project.name}-${variant.baseName}"
+                        def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
+
+                        def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
+
+                        if (variant.metaClass.hasProperty(variant, 'packageApplicationProvider')) {
+                            def packageAndroidArtifact = variant.packageApplicationProvider.get()
+                            if (packageAndroidArtifact != null) {
+                                try {
+                                    from new File(packageAndroidArtifact.outputDirectory.getAsFile().get(), variant.outputs.first().apkData.outputFileName)
+                                } catch (Exception e) {
+                                    from new File(packageAndroidArtifact.outputDirectory, variant.outputs.first().apkData.outputFileName)
+                                }
+                            } else {
+                                from variant.outputs.first().mainOutputFile.outputFile
+                            }
+                        } else {
+                            from variant.outputs.first().outputFile
+                        }
+
+                        into destPath
+                        rename { String fileName ->
+                            fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")
+                        }
+
+                        from "${buildDir}/outputs/mapping/${variant.dirName}/mapping.txt"
+                        into destPath
+                        rename { String fileName ->
+                            fileName.replace("mapping.txt", "${newFileNamePrefix}-mapping.txt")
+                        }
+
+                        from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
+                        from "${buildDir}/intermediates/symbol_list/${variant.dirName}/R.txt"
+                        from "${buildDir}/intermediates/runtime_symbol_list/${variant.dirName}/R.txt"
+                        into destPath
+                        rename { String fileName ->
+                            fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //多渠道配置
+    project.afterEvaluate {
+        if (hasFlavors) {
+            task(tinkerPatchAllFlavorRelease) {
+                group = 'tinker'
+                def originOldPath = getTinkerBuildFlavorDirectory()
+                for (String flavor : flavors) {
+                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Release")
+                    dependsOn tinkerTask
+                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}ReleaseManifest")
+                    preAssembleTask.doFirst {
+                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 15)
+                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release.apk"
+                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-mapping.txt"
+                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-R.txt"
+                    }
+                }
+            }
+
+            task(tinkerPatchAllFlavorDebug) {
+                group = 'tinker'
+                def originOldPath = getTinkerBuildFlavorDirectory()
+                for (String flavor : flavors) {
+                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Debug")
+                    dependsOn tinkerTask
+                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}DebugManifest")
+                    preAssembleTask.doFirst {
+                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 13)
+                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug.apk"
+                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-mapping.txt"
+                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-R.txt"
+                    }
+                }
+            }
+        }
+    }
+}
+

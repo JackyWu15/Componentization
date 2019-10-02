@@ -2,14 +2,12 @@ package com.hechuangwu.webview;
 
 import android.app.Application;
 
-import com.hechuangwu.baselibrary.base.BaseApplication;
-
 
 /**
  * 作者：created by ${zjt} on 2019/3/5
  * 描述:
  */
-public class WebApplication extends BaseApplication {
+public class WebApplication extends Application {
 
     static WebApplication webApplication;
     @Override

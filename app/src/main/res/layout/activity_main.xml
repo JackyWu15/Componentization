@@ -1,29 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context=".MainActivity">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity"
+    tools:ignore="ResourceName">
 
     <TextView
-        android:id="@+id/tv_text"
+        android:id="@+id/tv_reflect"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:gravity="center"
         android:text="注解"
         />
+
     <Button
-            android:id="@+id/bt_click"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="图片压缩"
-    />
+        android:id="@+id/bt_compress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="图片压缩"
+        />
+
     <Button
         android:id="@+id/bt_router"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="router跳转"
+        />
+
+    <Button
+        android:id="@+id/bt_crash"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="闪退模拟"
+        />
+    <Button
+        android:id="@+id/bt_fix"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="修复闪退"
         />
 </LinearLayout>
