@@ -1,1 +1,1 @@
-include ':app', ':base', ':webview'
+include ':app', ':base', ':webview', ':bundle'

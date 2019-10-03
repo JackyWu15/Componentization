@@ -42,4 +42,10 @@
         android:layout_height="wrap_content"
         android:text="修复闪退"
         />
+    <Button
+        android:id="@+id/bt_plugin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="插件化调用"
+        />
 </LinearLayout>

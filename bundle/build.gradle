@@ -1,48 +1,27 @@
-if (isNeedWebViewApplication.toBoolean()) {
-    apply plugin: 'com.android.application'//作为独自运行的Application
-} else {
-    apply plugin: 'com.android.library'//作为组件
-}
-
+//apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
 android {
     compileSdkVersion rootProject.ext.globalCompileSdkVersion
     buildToolsVersion rootProject.ext.globalBuildToolVersion
 
-    sourceSets {
-        main {
-            //独立运行下的Manifest
-            if (isNeedWebViewApplication.toBoolean()) {
-                manifest.srcFile 'src/main/run/AndroidManifest.xml'
-            }
-            //组件下的Manifest
-            else {
-                manifest.srcFile '/src/main/AndroidManifest.xml'
-                //排除java/debug文件夹下的所有文件
-                java {
-                    exclude '*module'
-                }
-            }
-        }
-    }
-    defaultConfig {
 
+    defaultConfig {
         minSdkVersion rootProject.ext.globalMinSdkVersion
         targetSdkVersion rootProject.ext.globalCompileSdkVersion
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {
             annotationProcessorOptions {
                 includeCompileClasspath = true
             }
         }
-        resourcePrefix "webview_"
+        resourcePrefix "bundle_"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = [AROUTER_MODULE_NAME: project.getName()]
             }
         }
 
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
     }
 

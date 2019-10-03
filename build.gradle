@@ -10,8 +10,8 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.4'
-        classpath "com.jakewharton:butterknife-gradle-plugin:9.0.0"
-        classpath ("com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}")
+        classpath "com.jakewharton:butterknife-gradle-plugin:9.0.0"//ButterKnife框架
+        classpath ("com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}")//tinker编译框架
     }
 }
 allprojects {
@@ -68,7 +68,8 @@ ext {
 
 
 
-
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+
