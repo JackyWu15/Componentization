@@ -1,6 +1,6 @@
 # Componentization
 
-这是由一个模块化和组件化架构搭建的项目，并实现了几个常见的功能，包含有如下内容：
+这是由一个模块化和组件化架构搭建的项目，并实现了几个常见的功能，包含如下内容：
 
 - Crash日志的捕获和保存。
 - 两种热修复方案实现：[阿里AndFix](https://github.com/alibaba/AndFix)和[腾讯Tinker](https://github.com/Tencent/tinker)。
