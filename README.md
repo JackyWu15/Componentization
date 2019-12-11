@@ -56,10 +56,10 @@ TinkerManager.loadPatch( tinkerFixPath );
 ButterKnife.bind( this );
 ```
 
-### IOC注解
+### 图片压缩
 
 ```java
-//图片压缩
+//压缩
 ImageCompress.compress( srcPath, dstPathHF );
 ```
 
