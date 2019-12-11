@@ -8,5 +8,11 @@
 - 通过ioc注解，实现仿写一个ButterKnife。 
 - 使用jni/ndk对Bitmap进行压缩。
 
+## 使用
 
+### Crash获取
 
+```java
+//获取上次闪退日志
+ExceptionCrashManager.getInstance().getCrashFile();
+```
